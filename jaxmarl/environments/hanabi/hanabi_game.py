@@ -193,6 +193,9 @@ class HanabiGame(MultiAgentEnv):
         # initialise reward for move
         reward = 0
 
+        # previous lives
+        prev_num_lives = jnp.sum(state.life_tokens)
+
         def _discard_play_fn(state: State, action: int):
             """Discard or play selected card according to action selection"""
             # get hand and card info
@@ -436,6 +439,9 @@ class HanabiGame(MultiAgentEnv):
 
         cur_player_idx = jnp.zeros(self.num_agents).at[aidx].set(1)
 
+        # shaped reward when a life is lost
+        shaped_reward = num_lives - prev_num_lives
+
         return (
             state.replace(
                 terminal=terminal,
@@ -447,6 +453,7 @@ class HanabiGame(MultiAgentEnv):
                 score=state.score + reward.astype(int),
             ),
             reward,
+            shaped_reward,
         )
 
     @partial(jax.jit, static_argnums=[0])

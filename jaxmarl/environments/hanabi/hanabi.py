@@ -172,7 +172,7 @@ class HanabiEnv(HanabiGame):
 
         # execute the current player's action and its consequences
         old_state = state
-        new_state, reward = self.step_game(state, aidx, action)
+        new_state, reward, shaped_reward = self.step_game(state, aidx, action)
 
         done = self.terminal(new_state)
         dones = {agent: done for agent in self.agents}
@@ -181,7 +181,7 @@ class HanabiEnv(HanabiGame):
         rewards = {agent: reward for agent in self.agents}
         rewards["__all__"] = reward
 
-        info = {}
+        info = {"shaped_reward": {agent: shaped_reward for agent in self.agents}}
 
         obs = lax.stop_gradient(self.get_obs(new_state, old_state, action))
 

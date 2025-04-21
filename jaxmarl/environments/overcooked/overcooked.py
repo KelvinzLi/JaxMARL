@@ -72,6 +72,7 @@ class Overcooked(MultiAgentEnv):
             layout = FrozenDict(layouts["cramped_room"]),
             random_reset: bool = False,
             max_steps: int = 400,
+            turn_based: bool = False, 
     ):
         # Sets self.num_agents to 2
         super().__init__(num_agents=2)
@@ -97,6 +98,10 @@ class Overcooked(MultiAgentEnv):
 
         self.random_reset = random_reset
         self.max_steps = max_steps
+        self.turn_based = turn_based
+
+    def get_turn_based_mask(self, state):
+        return jnp.arange(self.num_agents) == (state.time % self.num_agents)
 
     def step_env(
             self,
@@ -106,7 +111,16 @@ class Overcooked(MultiAgentEnv):
     ) -> Tuple[Dict[str, chex.Array], State, Dict[str, float], Dict[str, bool], Dict]:
         """Perform single timestep state transition."""
 
-        acts = self.action_set.take(indices=jnp.array([actions["agent_0"], actions["agent_1"]]))
+        if not turn_based:
+            acts = self.action_set.take(indices=jnp.array([actions["agent_0"], actions["agent_1"]]))
+        else:
+            mask = self.get_turn_based_mask(state)
+            action_indices = jax.where(
+                mask, 
+                jnp.array([actions["agent_0"], actions["agent_1"]]), 
+                jnp.array([Actions.stay,, Actions.stay,]), 
+            )
+            acts = self.action_set.take(indices=action_indices)
 
         state, reward, shaped_rewards = self.step_agents(key, state, acts)
 

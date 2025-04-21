@@ -115,7 +115,7 @@ class Overcooked(MultiAgentEnv):
             acts = self.action_set.take(indices=jnp.array([actions["agent_0"], actions["agent_1"]]))
         else:
             mask = self.get_turn_based_mask(state)
-            action_indices = jax.where(
+            action_indices = jnp.where(
                 mask, 
                 jnp.array([actions["agent_0"], actions["agent_1"]]), 
                 jnp.array([Actions.stay, Actions.stay,]), 

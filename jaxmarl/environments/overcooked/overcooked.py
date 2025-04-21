@@ -111,7 +111,7 @@ class Overcooked(MultiAgentEnv):
     ) -> Tuple[Dict[str, chex.Array], State, Dict[str, float], Dict[str, bool], Dict]:
         """Perform single timestep state transition."""
 
-        if not turn_based:
+        if not self.turn_based:
             acts = self.action_set.take(indices=jnp.array([actions["agent_0"], actions["agent_1"]]))
         else:
             mask = self.get_turn_based_mask(state)

@@ -132,13 +132,6 @@ class Overcooked(MultiAgentEnv):
 
         obs = self.get_obs(state)
 
-        if self.turn_based:
-            mask_dict = {"agent_0": mask[0].squeeze(), "agent_1": mask[1].squeeze()}
-            obs = jax.tree_util.tree_map(
-                lambda x,m: jnp.concatenate([x, jnp.full((*x.shape[:2], 1), m*1)], axis = -1), 
-                obs, mask_dict, 
-            )
-
         rewards = {"agent_0": reward, "agent_1": reward}
         shaped_rewards = {"agent_0": shaped_rewards[0], "agent_1": shaped_rewards[1]}
         dones = {"agent_0": done, "agent_1": done, "__all__": done}
@@ -264,7 +257,7 @@ class Overcooked(MultiAgentEnv):
 
         return lax.stop_gradient(obs), lax.stop_gradient(state)
 
-    def get_obs(self, state: State) -> Dict[str, chex.Array]:
+    def get_obs(self, state: state) -> Dict[str, chex.Array]:
         """Return a full observation, of size (height x width x n_layers), where n_layers = 26.
         Layers are of shape (height x width) and  are binary (0/1) except where indicated otherwise.
         The obs is very sparse (most elements are 0), which prob. contributes to generalization problems in Overcooked.
@@ -378,7 +371,17 @@ class Overcooked(MultiAgentEnv):
         alice_obs = jnp.transpose(alice_obs, (1, 2, 0))
         bob_obs = jnp.transpose(bob_obs, (1, 2, 0))
 
-        return {"agent_0" : alice_obs, "agent_1" : bob_obs}
+        obs = {"agent_0" : alice_obs, "agent_1" : bob_obs}
+
+        if self.turn_based:
+            mask = self.get_turn_based_mask(state)
+            mask_dict = {"agent_0": mask[0].squeeze(), "agent_1": mask[1].squeeze()}
+            obs = jax.tree_util.tree_map(
+                lambda x,m: jnp.concatenate([x, jnp.full((*x.shape[:2], 1), m*1)], axis = -1), 
+                obs, mask_dict, 
+            )
+
+        return obs
 
     def step_agents(
             self, key: chex.PRNGKey, state: State, action: chex.Array,

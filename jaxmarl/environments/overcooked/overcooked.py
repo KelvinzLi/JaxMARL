@@ -135,7 +135,8 @@ class Overcooked(MultiAgentEnv):
         if self.turn_based:
             mask_dict = {"agent_0": mask[0].squeeze(), "agent_1": mask[1].squeeze()}
             obs = jax.tree_util.tree_map(
-                lambda x,m: jnp.concatenate([x, jnp.full((*x.shape[:2], 1), m*1)], axis = -1)
+                lambda x,m: jnp.concatenate([x, jnp.full((*x.shape[:2], 1), m*1)], axis = -1), 
+                obs, mask_dict, 
             )
 
         rewards = {"agent_0": reward, "agent_1": reward}

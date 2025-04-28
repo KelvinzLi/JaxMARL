@@ -678,7 +678,7 @@ class Overcooked(MultiAgentEnv):
 
     def observation_space(self) -> spaces.Box:
         """Observation space of the environment."""
-        obs_shape = (*self.obs_shape[:-1], self.obs_shape[-1] + (0 if not turn_based else 1))
+        obs_shape = (*self.obs_shape[:-1], self.obs_shape[-1] + (0 if not self.turn_based else 1))
         return spaces.Box(0, 255, obs_shape)
 
     def state_space(self) -> spaces.Dict:

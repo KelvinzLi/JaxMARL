@@ -257,7 +257,7 @@ class Overcooked(MultiAgentEnv):
 
         return lax.stop_gradient(obs), lax.stop_gradient(state)
 
-    def get_obs(self, state: state) -> Dict[str, chex.Array]:
+    def get_obs(self, state: State) -> Dict[str, chex.Array]:
         """Return a full observation, of size (height x width x n_layers), where n_layers = 26.
         Layers are of shape (height x width) and  are binary (0/1) except where indicated otherwise.
         The obs is very sparse (most elements are 0), which prob. contributes to generalization problems in Overcooked.

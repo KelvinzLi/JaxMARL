@@ -81,7 +81,7 @@ class Overcooked(MultiAgentEnv):
         # Observations given by 26 channels, most of which are boolean masks
         self.height = layout["height"]
         self.width = layout["width"]
-        self.obs_shape = (self.width, self.height, 26 if not turn_based else 27)
+        self.obs_shape = (self.width, self.height, 26)
 
         self.agent_view_size = 5  # Hard coded. Only affects map padding -- not observations.
         self.layout = layout
@@ -678,7 +678,8 @@ class Overcooked(MultiAgentEnv):
 
     def observation_space(self) -> spaces.Box:
         """Observation space of the environment."""
-        return spaces.Box(0, 255, self.obs_shape)
+        obs_shape = (*self.obs_shape[:-1], self.obs_shape[-1] + (0 if not turn_based else 1))
+        return spaces.Box(0, 255, obs_shape)
 
     def state_space(self) -> spaces.Dict:
         """State space of the environment."""

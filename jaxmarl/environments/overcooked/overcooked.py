@@ -101,7 +101,11 @@ class Overcooked(MultiAgentEnv):
         self.turn_based = turn_based
 
     def get_turn_based_mask(self, state):
-        return jnp.arange(self.num_agents) == (state.time % self.num_agents)
+        if self.turn_based:
+            mask = jnp.arange(self.num_agents) == (state.time % self.num_agents)
+        else:
+            mask = jnp.ones((self.num_agents,), dtype = bool)
+        return mask
 
     def step_env(
             self,
@@ -111,16 +115,13 @@ class Overcooked(MultiAgentEnv):
     ) -> Tuple[Dict[str, chex.Array], State, Dict[str, float], Dict[str, bool], Dict]:
         """Perform single timestep state transition."""
 
-        if not self.turn_based:
-            acts = self.action_set.take(indices=jnp.array([actions["agent_0"], actions["agent_1"]]))
-        else:
-            mask = self.get_turn_based_mask(state)
-            action_indices = jnp.where(
-                mask, 
-                jnp.array([actions["agent_0"], actions["agent_1"]]), 
-                jnp.array([Actions.stay, Actions.stay,]), 
-            )
-            acts = self.action_set.take(indices=action_indices)
+        mask = self.get_turn_based_mask(state)
+        action_indices = jnp.where(
+            mask, 
+            jnp.array([actions["agent_0"], actions["agent_1"]]), 
+            jnp.array([Actions.stay, Actions.stay,]), 
+        )
+        acts = self.action_set.take(indices=action_indices)
 
         state, reward, shaped_rewards = self.step_agents(key, state, acts)
 

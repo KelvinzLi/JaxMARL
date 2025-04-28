@@ -81,7 +81,7 @@ class Overcooked(MultiAgentEnv):
         # Observations given by 26 channels, most of which are boolean masks
         self.height = layout["height"]
         self.width = layout["width"]
-        self.obs_shape = (self.width, self.height, 26)
+        self.obs_shape = (self.width, self.height, 26 if not turn_based else 27)
 
         self.agent_view_size = 5  # Hard coded. Only affects map padding -- not observations.
         self.layout = layout
@@ -131,6 +131,13 @@ class Overcooked(MultiAgentEnv):
         state = state.replace(terminal=done)
 
         obs = self.get_obs(state)
+
+        if self.turn_based:
+            mask_dict = {"agent_0": mask[0].squeeze(), "agent_1": mask[1].squeeze()}
+            obs = jax.tree_util.tree_map(
+                lambda x,m: jnp.concatenate([x, jnp.full((*x.shape[:2], 1), m*1)], axis = -1)
+            )
+
         rewards = {"agent_0": reward, "agent_1": reward}
         shaped_rewards = {"agent_0": shaped_rewards[0], "agent_1": shaped_rewards[1]}
         dones = {"agent_0": done, "agent_1": done, "__all__": done}

@@ -32,7 +32,7 @@ class BobActions(IntEnum):
     dog = 1
     bail_out = 2
 
-class CatDog(object):
+class CatDog(MultiAgentEnv):
 
     barrier_removed_reward = -5
 

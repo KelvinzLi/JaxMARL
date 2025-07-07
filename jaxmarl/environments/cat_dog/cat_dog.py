@@ -52,6 +52,9 @@ class CatDog(MultiAgentEnv):
             BobActions.cat, BobActions.dog, BobActions.bail_out, 
         ])
 
+        self.alice_obs_size = 2
+        self.bob_obs_size = 4
+
         self.action_spaces = {
             "agent_0": spaces.Discrete(len(self.alice_action_set)), 
             "agent_1": spaces.Discrete(len(self.bob_action_set)), 
@@ -153,14 +156,14 @@ class CatDog(MultiAgentEnv):
         return obs, state, rewards, dones, infos
     
     def get_obs(self, state: State) -> Dict[str, chex.Array]:
-        alice_obs = jnp.zeros((len(self.alice_obs_set),))
+        alice_obs = jnp.zeros((self.alice_obs_size),)
         alice_obs = jax.cond(
             state.is_cat,
             lambda: alice_obs.at[0].set(1), 
             lambda: alice_obs.at[1].set(1),
         )
 
-        bob_obs = jnp.zeros((len(self.bob_obs_set),))
+        bob_obs = jnp.zeros((self.bob_obs_size,))
         bob_obs = jax.cond(
             state.barrier_removed,
             jax.cond(

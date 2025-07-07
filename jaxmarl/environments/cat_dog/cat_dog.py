@@ -1,16 +1,15 @@
+from enum import IntEnum
+
 import jax
 import jax.numpy as jnp
-from typing import NamedTuple
-from typing import Tuple
-from jaxmarl.environments.multi_agent_env import MultiAgentEnv
+from typing import Dict
 import chex
-from jaxmarl.environments import spaces
-from typing import Optional, Tuple
-
-from flax import struct
-
-from enum import IntEnum
 from functools import partial
+from flax import struct
+from typing import Tuple, Optional
+
+from jaxmarl.environments.multi_agent_env import MultiAgentEnv
+from jaxmarl.environments import spaces
 
 @struct.dataclass
 class State:

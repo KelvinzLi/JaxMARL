@@ -7,9 +7,10 @@ import chex
 from jaxmarl.environments import spaces
 from typing import Optional, Tuple
 
-from enum import IntEnum
-
 from flax import struct
+
+from enum import IntEnum
+from functools import partial
 
 @struct.dataclass
 class State:

@@ -46,10 +46,10 @@ class CatDog(MultiAgentEnv):
         super().__init__(num_agents=2)
 
         self.alice_action_set = jnp.array([
-            AliceAction.light_off, AliceAction.light_on, AliceAction.remove_barrier, AliceAction.bail_out, 
+            AliceActions.light_off, AliceActions.light_on, AliceActions.remove_barrier, AliceActions.bail_out, 
         ])
         self.bob_action_set = jnp.array([
-            BobAction.cat, BobAction.dog, BobAction.bail_out, 
+            BobActions.cat, BobActions.dog, BobActions.bail_out, 
         ])
 
         self.action_spaces = {

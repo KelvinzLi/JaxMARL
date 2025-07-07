@@ -9,6 +9,8 @@ from typing import Optional, Tuple
 
 from enum import IntEnum
 
+from flax import struct
+
 @struct.dataclass
 class State:
     is_cat: bool

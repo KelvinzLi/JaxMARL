@@ -34,12 +34,12 @@ class BobActions(IntEnum):
 
 class CatDog(MultiAgentEnv):
 
-    barrier_removed_reward = -5
+    barrier_removed_reward = -5.
 
-    correct_guess_reward = 10
-    wrong_guess_reward = 10
+    correct_guess_reward = 10.
+    wrong_guess_reward = -10.
 
-    alice_bail_out_reward = 1
+    alice_bail_out_reward = 1.
     bob_bail_out_reward = 0.5
 
     def __init__(self) -> None:
@@ -78,7 +78,7 @@ class CatDog(MultiAgentEnv):
 
         obs = self.get_obs(state)
 
-        return lax.stop_gradient(obs), lax.stop_gradient(state)
+        return jax.lax.stop_gradient(obs), jax.lax.stop_gradient(state)
 
     def step_env(
         self, key: chex.PRNGKey, state: State, actions: Dict[str, chex.Array]
@@ -94,18 +94,18 @@ class CatDog(MultiAgentEnv):
         def alice_step_func(state):
             state = state.replace(
                 light_on = (alice_action == AliceActions.light_on), 
-                barrier_removed = (alice_action == AliceActions.barrier_removed), 
+                barrier_removed = (alice_action == AliceActions.remove_barrier), 
             )
 
-            reward = 0
-            reward = jax.cond(
-                alice_action == AliceActions.barrier_removed, 
-                lambda: barrier_removed_reward, 
+            reward = 0.
+            reward = jax.lax.cond(
+                alice_action == AliceActions.remove_barrier, 
+                lambda: self.barrier_removed_reward, 
                 lambda: reward
             )
-            reward = jax.cond(
+            reward = jax.lax.cond(
                 alice_action == AliceActions.bail_out, 
-                lambda: alice_bail_out_reward, 
+                lambda: self.alice_bail_out_reward, 
                 lambda: reward
             )
 
@@ -115,24 +115,24 @@ class CatDog(MultiAgentEnv):
 
         def bob_step_func(state):
 
-            correct_guess_flag = jax.logical_or(
-                jax.logical_and(bob_action == BobActions.cat, state.is_cat), 
-                jax.logical_and(bob_action == BobActions.dog, jnp.logical_not(state.is_cat)), 
+            correct_guess_flag = jnp.logical_or(
+                jnp.logical_and(bob_action == BobActions.cat, state.is_cat), 
+                jnp.logical_and(bob_action == BobActions.dog, jnp.logical_not(state.is_cat)), 
             )
 
-            reward = 0
-            reward = jax.cond(
-                jax.logical_or(bob_action == BobActions.cat, bob_action == BobActions.dog), 
-                jax.cond(
+            reward = 0.
+            reward = jax.lax.cond(
+                jnp.logical_or(bob_action == BobActions.cat, bob_action == BobActions.dog), 
+                lambda: jax.lax.cond(
                     correct_guess_flag, 
-                    lambda: correct_guess_reward, 
-                    lambda: wrong_guess_reward, 
+                    lambda: self.correct_guess_reward, 
+                    lambda: self.wrong_guess_reward, 
                 ), 
                 lambda: reward
             )
-            reward = jax.cond(
+            reward = jax.lax.cond(
                 bob_action == BobActions.bail_out, 
-                lambda: bob_bail_out_reward, 
+                lambda: self.bob_bail_out_reward, 
                 lambda: reward
             )
 
@@ -140,33 +140,37 @@ class CatDog(MultiAgentEnv):
 
             return state, reward, done
 
-        state, reward, done = jax.cond(
+        state, reward, done = jax.lax.cond(
             state.step == 0, 
             alice_step_func, 
             bob_step_func, 
             state
         )
 
+        state = state.replace(
+            step = state.step + 1
+        )
+
         obs = self.get_obs(state)
 
         rewards = {agent_name: reward for agent_name in self.agents}
-        dones = {agent_name: reward for agent_name in (*self.agents, "__all__")}
+        dones = {agent_name: done for agent_name in (*self.agents, "__all__")}
         infos = {}
 
         return obs, state, rewards, dones, infos
     
     def get_obs(self, state: State) -> Dict[str, chex.Array]:
         alice_obs = jnp.zeros((self.alice_obs_size),)
-        alice_obs = jax.cond(
+        alice_obs = jax.lax.cond(
             state.is_cat,
             lambda: alice_obs.at[0].set(1), 
             lambda: alice_obs.at[1].set(1),
         )
 
         bob_obs = jnp.zeros((self.bob_obs_size,))
-        bob_obs = jax.cond(
+        bob_obs = jax.lax.cond(
             state.barrier_removed,
-            jax.cond(
+            lambda: jax.lax.cond(
                 state.is_cat,
                 lambda: bob_obs.at[0].set(1), 
                 lambda: bob_obs.at[1].set(1),
@@ -174,10 +178,10 @@ class CatDog(MultiAgentEnv):
             lambda: bob_obs,
         )
         # TODO: should we indicate light bulb state even when barrier removed?
-        bob_obs = jax.cond(
+        bob_obs = jax.lax.cond(
             state.light_on,
-            lambda: bob_obs.at[2].set(1), 
-            lambda: bob_obs.at[3].set(1),
+            lambda: bob_obs.at[3].set(1), 
+            lambda: bob_obs.at[2].set(1),
         )
 
         return {"agent_0": alice_obs, "agent_1": bob_obs}

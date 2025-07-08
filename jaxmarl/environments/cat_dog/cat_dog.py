@@ -26,11 +26,13 @@ class AliceActions(IntEnum):
     light_on = 1
     remove_barrier = 2
     bail_out = 3
+    no_op = 4
 
 class BobActions(IntEnum):
     cat = 0
     dog = 1
     bail_out = 2
+    no_op = 3
 
 class CatDog(MultiAgentEnv):
 
@@ -46,10 +48,10 @@ class CatDog(MultiAgentEnv):
         super().__init__(num_agents=2)
 
         self.alice_action_set = jnp.array([
-            AliceActions.light_off, AliceActions.light_on, AliceActions.remove_barrier, AliceActions.bail_out, 
+            AliceActions.light_off, AliceActions.light_on, AliceActions.remove_barrier, AliceActions.bail_out, AliceActions.no_op, 
         ])
         self.bob_action_set = jnp.array([
-            BobActions.cat, BobActions.dog, BobActions.bail_out, 
+            BobActions.cat, BobActions.dog, BobActions.bail_out, BobActions.no_op, 
         ])
 
         self.alice_obs_size = 2
@@ -167,6 +169,7 @@ class CatDog(MultiAgentEnv):
             lambda: alice_obs.at[1].set(1),
         )
 
+        # TODO: should we indicate light bulb state even when barrier removed?
         bob_obs = jnp.zeros((self.bob_obs_size,))
         bob_obs = jax.lax.cond(
             state.barrier_removed,
@@ -175,13 +178,11 @@ class CatDog(MultiAgentEnv):
                 lambda: bob_obs.at[0].set(1), 
                 lambda: bob_obs.at[1].set(1),
             ), 
-            lambda: bob_obs,
-        )
-        # TODO: should we indicate light bulb state even when barrier removed?
-        bob_obs = jax.lax.cond(
-            state.light_on,
-            lambda: bob_obs.at[3].set(1), 
-            lambda: bob_obs.at[2].set(1),
+            lambda: jax.lax.cond(
+                state.light_on,
+                lambda: bob_obs.at[3].set(1), 
+                lambda: bob_obs.at[2].set(1),
+            ), 
         )
 
         return {"agent_0": alice_obs, "agent_1": bob_obs}
@@ -197,6 +198,27 @@ class CatDog(MultiAgentEnv):
     @partial(jax.jit, static_argnums=(0,))
     def get_avail_actions(self, state: State) -> Dict[str, chex.Array]:
         """Returns the available actions for each agent."""
+        alice_step_action_mask = {
+            "agent_0": jnp.ones((len(self.alice_action_set),)).at[-1].set(0), 
+            "agent_1": jnp.zeros((len(self.bob_action_set),)).at[-1].set(1), 
+        }
+
+        bob_step_action_mask = {
+            "agent_0": jnp.zeros((len(self.alice_action_set),)).at[-1].set(1), 
+            "agent_1": jnp.ones((len(self.bob_action_set),)).at[-1].set(0), 
+        }
+
+        mask = jax.lax.cond(
+            state.step == 0, 
+            lambda: alice_step_action_mask, 
+            lambda: bob_step_action_mask, 
+        )
+
+        return mask
+    
+    @partial(jax.jit, static_argnums=(0,))
+    def get_active_agent(self, state: State) -> Dict[str, chex.Array]:
+        """Returns the mask for the active agent."""
         alice_flag = (state.step == 0)
         return {"agent_0": alice_flag, "agent_1": jnp.logical_not(alice_flag)}
 

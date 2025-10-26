@@ -73,6 +73,7 @@ class Overcooked(MultiAgentEnv):
             random_reset: bool = False,
             max_steps: int = 400,
             turn_based: bool = False, 
+            truncate: bool = False, 
     ):
         # Sets self.num_agents to 2
         super().__init__(num_agents=2)
@@ -99,6 +100,7 @@ class Overcooked(MultiAgentEnv):
         self.random_reset = random_reset
         self.max_steps = max_steps
         self.turn_based = turn_based
+        self.truncate = truncate
 
     def get_turn_based_mask(self, state):
         if self.turn_based:
@@ -135,13 +137,21 @@ class Overcooked(MultiAgentEnv):
         rewards = {"agent_0": reward, "agent_1": reward}
         shaped_rewards = {"agent_0": shaped_rewards[0], "agent_1": shaped_rewards[1]}
         dones = {"agent_0": done, "agent_1": done, "__all__": done}
+        
+        info = {'shaped_reward': shaped_rewards}
+
+        if self.truncate:
+            info["truncatation"] = dones
+
+            dummy_done = jnp.full(done.shape, False)
+            dones = {"agent_0": dummy_done, "agent_1": dummy_done, "__all__": dummy_done}
 
         return (
             lax.stop_gradient(obs),
             lax.stop_gradient(state),
             rewards,
             dones,
-            {'shaped_reward': shaped_rewards},
+            info,
         )
 
     def reset(

@@ -141,7 +141,7 @@ class Overcooked(MultiAgentEnv):
         info = {'shaped_reward': shaped_rewards}
 
         if self.truncate:
-            info["truncatation"] = dones
+            info["truncation"] = dones
 
             dummy_done = jnp.full(done.shape, False)
             dones = {"agent_0": dummy_done, "agent_1": dummy_done, "__all__": dummy_done}

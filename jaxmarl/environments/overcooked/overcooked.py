@@ -144,7 +144,7 @@ class Overcooked(MultiAgentEnv):
             info["truncation"] = dones
 
             dummy_done = jnp.full(done.shape, False)
-            dones = {"agent_0": dummy_done, "agent_1": dummy_done, "__all__": dummy_done}
+            dones = {"agent_0": dummy_done, "agent_1": dummy_done, "__all__": done} ### work-around to notify the env to reset
 
         return (
             lax.stop_gradient(obs),
